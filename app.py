@@ -1,25 +1,32 @@
 from flask import Flask, render_template, request, redirect, session
-import sqlite3, datetime
+import psycopg2, os, datetime, bcrypt
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# ---------------- DB ----------------
-def init_db():
-    conn = sqlite3.connect("database.db")
+# ---------------- DATABASE ----------------
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-    conn.execute("""
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
+
+# ---------------- INIT DB ----------------
+def init_db():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS users(
-        id INTEGER PRIMARY KEY,
-        username TEXT,
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE,
         password TEXT,
         role TEXT
     )
     """)
 
-    conn.execute("""
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS tickets(
-        id INTEGER PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         title TEXT,
         description TEXT,
         status TEXT,
@@ -35,24 +42,17 @@ def init_db():
     conn.close()
 
 init_db()
-conn = sqlite3.connect("database.db")
 
-try:
-    conn.execute("ALTER TABLE tickets ADD COLUMN project TEXT")
-except:
-    pass
-
-conn.commit()
-conn.close()
 # ---------------- GLOBAL NOTIFICATION ----------------
 @app.context_processor
 def inject_notif():
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("SELECT COUNT(*) FROM tickets WHERE status='Open'")
     notif = cur.fetchone()[0]
 
+    conn.close()
     return dict(notif=notif)
 
 # ---------------- LOGIN ----------------
@@ -62,17 +62,50 @@ def login():
         user = request.form["username"]
         pwd = request.form["password"]
 
-        # 🔥 DB use hi nahi karenge
-        session["user"] = user
+        conn = get_conn()
+        cur = conn.cursor()
 
+        cur.execute("SELECT * FROM users WHERE username=%s", (user,))
+        data = cur.fetchone()
+
+        # user exist
+        if data:
+            db_pwd = data[2]
+
+            if bcrypt.checkpw(pwd.encode(), db_pwd.encode()):
+                session["user"] = data[1]
+                session["role"] = data[3]
+                conn.close()
+                return redirect("/dashboard")
+
+        # user not exist → create
+        hashed = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt()).decode()
+
+        cur.execute(
+            "INSERT INTO users(username,password,role) VALUES(%s,%s,%s)",
+            (user, hashed, "admin")
+        )
+
+        conn.commit()
+
+        session["user"] = user
+        session["role"] = "admin"
+
+        conn.close()
         return redirect("/dashboard")
 
     return render_template("login.html")
 
+# ---------------- LOGOUT ----------------
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
+
 # ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("SELECT COUNT(*) FROM tickets")
@@ -87,7 +120,6 @@ def dashboard():
     cur.execute("SELECT COUNT(*) FROM tickets WHERE assigned_to IS NOT NULL")
     assigned = cur.fetchone()[0]
 
-    # overdue
     cur.execute("SELECT deadline, status FROM tickets")
     data = cur.fetchall()
 
@@ -103,6 +135,8 @@ def dashboard():
             except:
                 pass
 
+    conn.close()
+
     return render_template("dashboard.html",
         total=total,
         open_t=open_t,
@@ -111,29 +145,25 @@ def dashboard():
         overdue=overdue
     )
 
-# ---------------- TICKETS (SEARCH + FILTER) ----------------
+# ---------------- TICKETS ----------------
 @app.route("/tickets")
 def tickets():
     q = request.args.get("q")
-    status = request.args.get("status")
 
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     if q:
         cur.execute("""
         SELECT * FROM tickets 
-        WHERE LOWER(title) LIKE LOWER(?) 
-        OR LOWER(description) LIKE LOWER(?)
+        WHERE LOWER(title) LIKE LOWER(%s)
+        OR LOWER(description) LIKE LOWER(%s)
         """, ('%' + q + '%', '%' + q + '%'))
-
-    elif status:
-        cur.execute("SELECT * FROM tickets WHERE status=?", (status,))
-
     else:
         cur.execute("SELECT * FROM tickets")
 
     data = cur.fetchall()
+    conn.close()
 
     return render_template("tickets.html", tickets=data)
 
@@ -148,13 +178,17 @@ def create():
         now = datetime.datetime.now()
         deadline = now + datetime.timedelta(hours=4)
 
-        conn = sqlite3.connect("database.db")
-        conn.execute("""
-        INSERT INTO tickets(title, description, status, created_at, deadline, project)
-        VALUES(?,?, 'Open',?,?,?)
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("""
+        INSERT INTO tickets(title,description,status,created_at,deadline,project)
+        VALUES(%s,%s,'Open',%s,%s,%s)
         """, (title, desc, str(now), str(deadline), project))
 
         conn.commit()
+        conn.close()
+
         return redirect("/tickets")
 
     return render_template("create.html")
@@ -164,9 +198,13 @@ def create():
 def assign(id):
     agent = request.form["agent"]
 
-    conn = sqlite3.connect("database.db")
-    conn.execute("UPDATE tickets SET assigned_to=? WHERE id=?", (agent,id))
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("UPDATE tickets SET assigned_to=%s WHERE id=%s", (agent, id))
+
     conn.commit()
+    conn.close()
 
     return redirect("/tickets")
 
@@ -175,78 +213,20 @@ def assign(id):
 def status(id):
     status = request.form["status"]
 
-    conn = sqlite3.connect("database.db")
-    conn.execute("UPDATE tickets SET status=? WHERE id=?", (status,id))
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("UPDATE tickets SET status=%s WHERE id=%s", (status, id))
+
     conn.commit()
+    conn.close()
 
     return redirect("/tickets")
 
-# ---------------- EDIT ----------------
-@app.route("/edit/<int:id>", methods=["GET","POST"])
-def edit(id):
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    if request.method == "POST":
-        title = request.form["title"]
-        desc = request.form["description"]
-
-        conn.execute("UPDATE tickets SET title=?, description=? WHERE id=?", (title, desc, id))
-        conn.commit()
-
-        return redirect("/tickets")
-
-    cur.execute("SELECT * FROM tickets WHERE id=?", (id,))
-    t = cur.fetchone()
-
-    return render_template("edit.html", t=t)
-
-# ---------------- DELETE ----------------
-@app.route("/delete/<int:id>")
-def delete(id):
-    conn = sqlite3.connect("database.db")
-    conn.execute("DELETE FROM tickets WHERE id=?", (id,))
-    conn.commit()
-
-    return redirect("/tickets")
-
-# ---------------- PROBLEMS ----------------
-@app.route("/problems")
-def problems():
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM tickets WHERE status='Open'")
-    data = cur.fetchall()
-
-    return render_template("problems.html", tickets=data)
-
-# ---------------- CHANGES ----------------
-@app.route("/changes")
-def changes():
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM tickets WHERE status='Closed'")
-    data = cur.fetchall()
-
-    return render_template("changes.html", tickets=data)
-
-# ---------------- ASSETS ----------------
-@app.route("/assets")
-def assets():
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM tickets WHERE assigned_to IS NOT NULL")
-    data = cur.fetchall()
-
-    return render_template("assets.html", tickets=data)
-
-# ---------------- PROJECT LIST ----------------
+# ---------------- PROJECTS ----------------
 @app.route("/projects")
 def projects():
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
@@ -256,35 +236,33 @@ def projects():
     """)
 
     data = cur.fetchall()
+    conn.close()
 
     return render_template("projects.html", projects=data)
 
 # ---------------- PROJECT DETAIL ----------------
 @app.route("/project/<name>")
 def project_detail(name):
-    conn = sqlite3.connect("database.db")
+    conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM tickets WHERE project=?", (name,))
+    cur.execute("SELECT * FROM tickets WHERE project=%s", (name,))
     data = cur.fetchall()
 
+    conn.close()
+
     return render_template("project_detail.html", tickets=data, project=name)
+@app.route("/users")
+def users():
+    conn = get_conn()
+    cur = conn.cursor()
 
-# ---------------- SETTINGS ----------------
-@app.route("/settings", methods=["GET","POST"])
-def settings():
-    if request.method == "POST":
-        username = request.form["username"]
+    cur.execute("SELECT id, username, role FROM users")
+    data = cur.fetchall()
 
-        conn = sqlite3.connect("database.db")
-        conn.execute("UPDATE users SET username=? WHERE username=?", 
-                     (username, session["user"]))
-        conn.commit()
+    conn.close()
 
-        session["user"] = username
-
-    return render_template("settings.html")
-
+    return render_template("users.html", users=data)
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run()

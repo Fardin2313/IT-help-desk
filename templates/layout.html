@@ -84,7 +84,14 @@
             <p>Reports</p>
           </a>
         </li>
-
+{% if session.get('role') == 'admin' %}
+<li class="nav-item">
+  <a href="/users" class="nav-link">
+    <i class="fas fa-users"></i>
+    <p>Manage Users</p>
+  </a>
+</li>
+{% endif %}
       </ul>
     </nav>
 
@@ -97,6 +104,9 @@
 </div>
 
 </div>
-
+<div class="dropdown">
+  {{ session['user'] }}
+  <a href="/logout">Logout</a>
+</div>
 </body>
 </html>
