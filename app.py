@@ -62,21 +62,9 @@ def login():
         user = request.form["username"]
         pwd = request.form["password"]
 
-        conn = sqlite3.connect("database.db")
-        cur = conn.cursor()
-
-        cur.execute("SELECT * FROM users WHERE username=?", (user,))
-        data = cur.fetchone()
-
-        # 🔥 agar user exist nahi → create
-        if not data:
-            conn.execute(
-                "INSERT INTO users(username,password,role) VALUES(?,?,?)",
-                (user, pwd, "admin")
-            )
-            conn.commit()
-
+        # 🔥 DB use hi nahi karenge
         session["user"] = user
+
         return redirect("/dashboard")
 
     return render_template("login.html")
