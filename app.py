@@ -65,22 +65,19 @@ def login():
         conn = sqlite3.connect("database.db")
         cur = conn.cursor()
 
-        cur.execute("SELECT * FROM users WHERE username=? AND password=?", (user, pwd))
+        cur.execute("SELECT * FROM users WHERE username=?", (user,))
         data = cur.fetchone()
 
-        # ✅ AGAR USER EXIST
-        if data:
-            session["user"] = data[1]
-            return redirect("/dashboard")
-
-        # 🔥 AGAR USER NAHI EXIST → AUTO CREATE
-        else:
-            conn.execute("INSERT INTO users(username,password,role) VALUES(?,?,?)",
-                         (user, pwd, "admin"))
+        # 🔥 agar user exist nahi → create
+        if not data:
+            conn.execute(
+                "INSERT INTO users(username,password,role) VALUES(?,?,?)",
+                (user, pwd, "admin")
+            )
             conn.commit()
 
-            session["user"] = user
-            return redirect("/dashboard")
+        session["user"] = user
+        return redirect("/dashboard")
 
     return render_template("login.html")
 
