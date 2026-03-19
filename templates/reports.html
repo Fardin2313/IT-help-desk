@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Reports</h2>
+
+<canvas id="reportChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById("reportChart"), {
+    type: 'pie',
+    data: {
+        labels: ["Open","Closed"],
+        datasets: [{
+            data: [{{open_t}}, {{closed_t}}],
+            backgroundColor: ["orange","green"]
+        }]
+    }
+});
+</script>
+
+{% endblock %}

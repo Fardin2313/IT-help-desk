@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Edit Ticket</h2>
+
+<form method="post">
+
+<input name="title" value="{{ t[1] }}" class="form-control mb-2">
+
+<textarea name="description" class="form-control mb-2">{{ t[2] }}</textarea>
+
+<button class="btn btn-primary">Update</button>
+
+</form>
+
+{% endblock %}

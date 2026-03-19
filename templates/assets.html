@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Assets (Assigned Tickets)</h2>
+
+<table class="table table-dark">
+<tr>
+<th>ID</th><th>Title</th><th>Assigned To</th>
+</tr>
+
+{% for t in tickets %}
+<tr>
+<td>{{ t[0] }}</td>
+<td>{{ t[1] }}</td>
+<td>{{ t[7] }}</td>
+</tr>
+{% endfor %}
+
+</table>
+
+{% endblock %}

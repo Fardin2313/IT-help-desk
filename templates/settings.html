@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Settings</h2>
+
+<form method="post">
+
+<label>Username</label>
+<input name="username" value="{{ session['user'] }}" class="form-control mb-2">
+
+<button class="btn btn-primary">Update</button>
+
+</form>
+
+{% endblock %}

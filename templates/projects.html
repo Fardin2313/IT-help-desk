@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Projects</h2>
+
+<table class="table table-dark">
+
+<tr>
+<th>Project</th>
+<th>Total</th>
+<th>View</th>
+</tr>
+
+{% for p in projects %}
+<tr>
+<td>{{ p[0] }}</td>
+<td>{{ p[1] }}</td>
+
+<td>
+<a href="/project/{{p[0]}}" class="btn btn-info btn-sm">Open</a>
+</td>
+</tr>
+{% endfor %}
+
+</table>
+
+{% endblock %}

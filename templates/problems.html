@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Problems (Open Tickets)</h2>
+
+<table class="table table-dark">
+<tr>
+<th>ID</th><th>Issue</th><th>Status</th>
+</tr>
+
+{% for t in tickets %}
+<tr>
+<td>{{ t[0] }}</td>
+<td>{{ t[2] }}</td>
+<td>{{ t[3] }}</td>
+</tr>
+{% endfor %}
+
+</table>
+
+{% endblock %}

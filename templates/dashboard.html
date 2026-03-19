@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h3>Helpdesk Dashboard</h3>
+
+<div class="row">
+
+<div class="col-md-3">
+<div class="card bg-info text-white p-3">
+Total Tickets: {{ total }}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card bg-warning text-white p-3">
+Open Tickets: {{ open_t }}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card bg-success text-white p-3">
+Closed Tickets: {{ closed_t }}
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card bg-danger text-white p-3">
+Assigned: {{ assigned }}
+</div>
+</div>
+
+</div>
+
+<div class="row mt-4">
+
+<div class="col-md-6">
+<div class="card">
+<div class="card-header">Tickets Overview</div>
+<div class="card-body">
+<canvas id="chart1"></canvas>
+</div>
+</div>
+</div>
+
+<div class="col-md-6">
+<div class="card">
+<div class="card-header">Status Distribution</div>
+<div class="card-body">
+<canvas id="chart2"></canvas>
+</div>
+</div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById("chart1"), {
+    type: 'bar',
+    data: {
+        labels: ["Total","Open","Closed"],
+        datasets: [{
+            label: "Tickets",
+            data: [{{total}}, {{open_t}}, {{closed_t}}],
+            backgroundColor: ["blue","orange","green"]
+        }]
+    }
+});
+
+new Chart(document.getElementById("chart2"), {
+    type: 'pie',
+    data: {
+        labels: ["Open","Closed"],
+        datasets: [{
+            data: [{{open_t}}, {{closed_t}}],
+            backgroundColor: ["orange","green"]
+        }]
+    }
+});
+</script>
+
+{% endblock %}

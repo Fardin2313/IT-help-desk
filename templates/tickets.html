@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h2>Tickets</h2>
+<a href="/create" class="btn btn-success mb-2">Create Ticket</a>
+
+<table class="table table-dark table-bordered">
+
+<tr>
+<th>ID</th>
+<th>Title</th>
+<th>Description</th>
+<th>Status</th>
+<th>Assigned</th>
+<th>Actions</th>
+</tr>
+
+{% if tickets|length == 0 %}
+<tr>
+<td colspan="6" class="text-center">No results found</td>
+</tr>
+{% else %}
+
+{% for t in tickets %}
+<tr>
+<td>{{ t[0] }}</td>
+<td>{{ t[1] }}</td>
+<td>{{ t[2] }}</td>
+
+<td>
+<form action="/status/{{t[0]}}" method="post">
+<select name="status">
+<option {{ 'selected' if t[3]=='Open' }}>Open</option>
+<option {{ 'selected' if t[3]=='Closed' }}>Closed</option>
+</select>
+<button>Update</button>
+</form>
+</td>
+
+<td>{{ t[7] }}</td>
+
+<td>
+<a href="/edit/{{t[0]}}" class="btn btn-warning btn-sm">Edit</a>
+<a href="/delete/{{t[0]}}" class="btn btn-danger btn-sm">Delete</a>
+
+<form action="/assign/{{t[0]}}" method="post" style="margin-top:5px;">
+<input name="agent" placeholder="Assign">
+<button class="btn btn-info btn-sm">Assign</button>
+</form>
+</td>
+
+</tr>
+{% endfor %}
+
+{% endif %}
+
+</table>
+
+{% endblock %}
