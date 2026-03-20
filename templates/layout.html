@@ -1,112 +1,122 @@
 <!DOCTYPE html>
 <html>
 <head>
+<title>IT Help Desk</title>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed dark-mode">
 
 <div class="wrapper">
 
-<!-- NAVBAR -->
+<!-- 🔝 NAVBAR -->
 <nav class="main-header navbar navbar-dark">
 
 <form action="/tickets" method="get">
 <input type="text" name="q" placeholder="Search" class="form-control">
-<button type="submit">Search</button>
 </form>
 
-
-<span class="ml-3">{{ session['user'] }}</span>
+<span class="ml-3">{{ session.get('user') }}</span>
 
 <a href="/settings" class="ml-3"><i class="fas fa-cog"></i></a>
-<a href="/tickets?status=Open">
+
+<a href="/tickets?status=Open" class="ml-3">
 🔔 {{ notif }}
 </a>
+
+<a href="/logout" class="ml-3 btn btn-danger btn-sm">Logout</a>
+
 </nav>
 
-<!-- SIDEBAR -->
+
+<!-- 📂 SIDEBAR -->
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
 
-  <a class="brand-link text-center">IT Help Desk</a>
+<a class="brand-link text-center">IT Help Desk</a>
 
-  <div class="sidebar">
+<div class="sidebar">
+<nav class="mt-2">
+<ul class="nav nav-pills nav-sidebar flex-column">
 
-    <nav class="mt-2">
-      <ul class="nav nav-pills nav-sidebar flex-column">
+<li class="nav-item">
+<a href="/dashboard" class="nav-link">
+<i class="fas fa-home"></i>
+<p>Home</p>
+</a>
+</li>
 
-        <li class="nav-item">
-          <a href="/dashboard" class="nav-link">
-            <i class="fas fa-home"></i>
-            <p>Home</p>
-          </a>
-        </li>
+<li class="nav-item">
+<a href="/tickets" class="nav-link">
+<i class="fas fa-ticket-alt"></i>
+<p>Requests</p>
+</a>
+</li>
 
-        <li class="nav-item">
-          <a href="/tickets" class="nav-link">
-            <i class="fas fa-ticket-alt"></i>
-            <p>Requests</p>
-          </a>
-        </li>
+<li class="nav-item">
+<a href="/problems" class="nav-link">
+<i class="fas fa-bug"></i>
+<p>Problems</p>
+</a>
+</li>
 
-        <li class="nav-item">
-          <a href="/problems" class="nav-link">
-            <i class="fas fa-bug"></i>
-            <p>Problems</p>
-          </a>
-        </li>
+<li class="nav-item">
+<a href="/changes" class="nav-link">
+<i class="fas fa-random"></i>
+<p>Changes</p>
+</a>
+</li>
 
-        <li class="nav-item">
-          <a href="/changes" class="nav-link">
-            <i class="fas fa-random"></i>
-            <p>Changes</p>
-          </a>
-        </li>
+<li class="nav-item">
+<a href="/projects" class="nav-link">
+<i class="fas fa-folder"></i>
+<p>Projects</p>
+</a>
+</li>
 
-        <li class="nav-item">
-          <a href="/projects" class="nav-link">
-            <i class="fas fa-folder"></i>
-            <p>Projects</p>
-          </a>
-        </li>
+<li class="nav-item">
+<a href="/assets" class="nav-link">
+<i class="fas fa-box"></i>
+<p>Assets</p>
+</a>
+</li>
 
-        <li class="nav-item">
-          <a href="/assets" class="nav-link">
-            <i class="fas fa-box"></i>
-            <p>Assets</p>
-          </a>
-        </li>
+<li class="nav-item">
+<a href="/reports" class="nav-link">
+<i class="fas fa-chart-bar"></i>
+<p>Reports</p>
+</a>
+</li>
 
-        <li class="nav-item">
-          <a href="/reports" class="nav-link">
-            <i class="fas fa-chart-bar"></i>
-            <p>Reports</p>
-          </a>
-        </li>
+<!-- 🔐 ROLE BASED -->
 {% if session.get('role') == 'admin' %}
 <li class="nav-item">
-  <a href="/users" class="nav-link">
-    <i class="fas fa-users"></i>
-    <p>Manage Users</p>
-  </a>
+<a href="/users" class="nav-link">
+<i class="fas fa-users"></i>
+<p>Manage Users</p>
+</a>
 </li>
 {% endif %}
-      </ul>
-    </nav>
 
-  </div>
+</ul>
+</nav>
+</div>
+
 </aside>
 
-<!-- CONTENT -->
+
+<!-- 📄 PAGE CONTENT -->
 <div class="content-wrapper p-3">
-{% block content %}{% endblock %}
+
+{% block content %}
+<!-- yaha har page ka content aata hai -->
+{% endblock %}
+
 </div>
 
 </div>
-<div class="dropdown">
-  {{ session['user'] }}
-  <a href="/logout">Logout</a>
-</div>
+
 </body>
 </html>
